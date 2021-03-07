@@ -42,11 +42,22 @@ class Image:
     return Chunk(start, name, datasize)
 
 
+  def print_chunk_named(self, name):
+    if name == "IHDR":
+      self.print_IHDR_chunk()
+    elif name == "PLTE":
+      self.print_PLTE_chunk()
+    elif name == "IDAT":
+      self.print_IDAT_chunks()
+    elif name == "IEND":
+      self.print_IEND_chunk()
+
+
   def print_critical_chunks(self):
     self.print_IHDR_chunk()
-    # self.print_PLTE_chunk()
-    # self.print_IDAT_chunks()
-    # self.print_IEND_chunk()
+    self.print_PLTE_chunk()
+    self.print_IDAT_chunks()
+    self.print_IEND_chunk()
 
 
   def print_IHDR_chunk(self):
@@ -57,15 +68,43 @@ class Image:
           height = int.from_bytes(chunk_data[4:8], byteorder="big", signed=False)
           bit_depth = chunk_data[8]
           color_type = chunk_data[9]
-          text = '{0:18}{1}\n'.format("chunk name:", chunk.name)
-          text += '{0:18}{1}\n'.format("width [px]:", width)
-          text += '{0:18}{1}\n'.format("height [px]:", height)
-          text += '{0:18}{1}\n'.format("bit_depth:", bit_depth)
-          text += '{0:18}{1}\n'.format("color_type:", color_type)
+          text = '{0:15}{1}\n'.format("chunk name:", chunk.name)
+          text += '{0:15}{1}\n'.format("width [px]:", width)
+          text += '{0:15}{1}\n'.format("height [px]:", height)
+          text += '{0:15}{1}\n'.format("bit_depth:", bit_depth)
+          text += '{0:15}{1}\n'.format("color_type:", color_type)
           print(text)
 
 
-  def print_chunks(self):
+  def print_PLTE_chunk(self):
+    for chunk in self.chunks:
+      if chunk.name == "PLTE":
+        chunk_data = self.data[chunk.start+8:chunk.start+8+chunk.datasize]
+        palette_size = chunk.datasize//3
+        text = '{0:15}{1}\n'.format("chunk name:", chunk.name)
+        text += '{0:8}{1:>3} {2:>3} {3:>3}\n'.format("color:", "R", "G", "B")
+        text += '{0}\n'.format("-------------------")
+        print(text)
+        for color in range(palette_size):
+          red = chunk_data[color*3]
+          green = chunk_data[color*3+1]
+          blue = chunk_data[color*3+2]
+          print('{0:<8}{1:3} {2:3} {3:3}\n'.format(color, red, green, blue))
+
+
+  def print_IDAT_chunks(self):
+    for chunk in self.chunks:
+      if chunk.name == "IDAT":
+        print(chunk)
+
+
+  def print_IEND_chunk(self):
+    for chunk in self.chunks:
+      if chunk.name == "IEND":
+        print(chunk)
+
+
+  def print_all_chunks(self):
     for chunk in self.chunks:
       print(chunk)
 
@@ -94,7 +133,7 @@ def menu():
   text += "2 - Print chunk list\n"
   text += "3 - Print critical chunks\n"
   # text += "4 - Print ancillary chunks\n"
-  # text += "5 - Print specific chunk\n"
+  text += "5 - Print specific chunk\n"
   # text += "6 - Remove ancillary chunks\n"
   text += "q - Exit\n"
   text += "Your choice: "
@@ -135,9 +174,12 @@ def inspect(filepath):
         if option == "1":
           display_image(filepath)
         elif option == "2":
-          img.print_chunks()
+          img.print_all_chunks()
         elif option == "3":
           img.print_critical_chunks()
+        elif option == "5":
+          chunk_name = input("Enter name of chunk to print: ")
+          img.print_chunk_named(chunk_name)
         option = input(menu())
         print("")
 

@@ -1,4 +1,5 @@
 from PIL import Image as PILImage
+import lookup_tables as lt
 
 class Image:
   def __init__(self):
@@ -68,11 +69,11 @@ class Image:
           height = int.from_bytes(chunk_data[4:8], byteorder="big", signed=False)
           bit_depth = chunk_data[8]
           color_type = chunk_data[9]
-          text = '{0:15}{1}\n'.format("chunk name:", chunk.name)
-          text += '{0:15}{1}\n'.format("width [px]:", width)
-          text += '{0:15}{1}\n'.format("height [px]:", height)
-          text += '{0:15}{1}\n'.format("bit_depth:", bit_depth)
-          text += '{0:15}{1}\n'.format("color_type:", color_type)
+          text = '{0:15}{1:<8}\n'.format("chunk name:", chunk.name)
+          text += '{0:15}{1:<8}\n'.format("width [px]:", width)
+          text += '{0:15}{1:<8}\n'.format("height [px]:", height)
+          text += '{0:15}{1:<8}\n'.format("bit_depth:", bit_depth)
+          text += '{0:15}{1:<8}{2}\n'.format("color_type:", color_type, lt.ihdr_color_type[color_type])
           print(text)
 
 

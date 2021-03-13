@@ -44,6 +44,9 @@ class Image:
       name += chr(self.data[start + offset])
     return Chunk(start, name, datasize)
 
+  def get_chunk_data(self, start, datasize):
+    return self.data[start+8:start+8+datasize]
+
   def print_chunk_named(self, name):
     if name == "IHDR":
       self.print_IHDR_chunk()
@@ -55,6 +58,8 @@ class Image:
       self.print_IEND_chunk()
     elif name == "iCCP":
       self.print_iCCP_chunk()
+    elif name == "tRNS":
+      self.print_tRNS_chunk()
 
   def print_critical_chunks(self):
     self.print_IHDR_chunk()
@@ -65,7 +70,7 @@ class Image:
   def print_IHDR_chunk(self):
       for chunk in self.chunks:
         if chunk.name == "IHDR":
-          chunk_data = self.data[chunk.start+8:chunk.start+8+chunk.datasize]
+          chunk_data = self.get_chunk_data(chunk.start, chunk.datasize)
           width = int.from_bytes(chunk_data[0:4], byteorder="big", signed=False)
           height = int.from_bytes(chunk_data[4:8], byteorder="big", signed=False)
           bit_depth = chunk_data[8]
@@ -74,23 +79,24 @@ class Image:
           text += '{0:16}{1:<}\n'.format("width [px]:", width)
           text += '{0:16}{1:<}\n'.format("height [px]:", height)
           text += '{0:16}{1:<}\n'.format("bit_depth:", bit_depth)
-          text += '{0:16}{1:<}{2}\n'.format("color_type:", color_type, lt.ihdr_color_type[color_type])
+          text += '{0:16}{1:<8}{2}\n'.format("color_type:", color_type, lt.ihdr_color_type[color_type])
           print(text)
 
   def print_PLTE_chunk(self):
     for chunk in self.chunks:
       if chunk.name == "PLTE":
-        chunk_data = self.data[chunk.start+8:chunk.start+8+chunk.datasize]
+        chunk_data = self.get_chunk_data(chunk.start, chunk.datasize)
         palette_size = chunk.datasize//3
         text = '{0:16}{1}\n'.format("chunk name:", chunk.name)
-        text += '{0:8}{1:>3} {2:>3} {3:>3}\n'.format("color:", "R", "G", "B")
-        text += '{0}\n'.format("--------------------")
+        text += '{0:8} | {1:>3} {2:>3} {3:>3}\n'.format("color:", "R", "G", "B")
+        text += '{0}'.format("--------------------")
         print(text)
         for color in range(palette_size):
           red = chunk_data[color*3]
           green = chunk_data[color*3+1]
           blue = chunk_data[color*3+2]
-          print('{0:<8}{1:3} {2:3} {3:3}\n'.format(color, red, green, blue))
+          print('{0:<8} | {1:3} {2:3} {3:3}'.format(color, red, green, blue))
+        print("")
 
   def print_IDAT_chunks(self):
     for chunk in self.chunks:
@@ -105,7 +111,7 @@ class Image:
   def print_iCCP_chunk(self):
     for chunk in self.chunks:
       if chunk.name == "iCCP":
-        chunk_data = self.data[chunk.start+8:chunk.start+8+chunk.datasize]
+        chunk_data = self.get_chunk_data(chunk.start, chunk.datasize)
         profile_name = []
         for i in chunk_data:
           if not i == 0x00:
@@ -128,6 +134,34 @@ class Image:
         text += '{0:16}{1:<}\n'.format("copyright:", profile.profile.copyright)
         text += '{0:16}{1:<}\n'.format("description:", profile.profile.profile_description)
         print(text)
+
+  def print_tRNS_chunk(self):
+    for chunk in self.chunks:
+        if chunk.name == "tRNS":
+          chunk_data = self.get_chunk_data(chunk.start, chunk.datasize)
+          color_type = self.get_color_type()
+          print('{0:16}{1:<}\n'.format("chunk name:", chunk.name))
+          if color_type == 0:
+            alpha = int.from_bytes(chunk_data, byteorder="big", signed=False)
+            print('{0:16}{1:<}'.format("alpha:", alpha))
+          elif color_type == 2:
+            red = int.from_bytes(chunk_data[0:2], byteorder="big", signed=False)
+            green = int.from_bytes(chunk_data[2:4], byteorder="big", signed=False)
+            blue = int.from_bytes(chunk_data[4:6], byteorder="big", signed=False)
+            print('{0:16}{1:3} {2:3} {3:3}'.format("alpha:", red, green, blue))
+          elif color_type == 3:
+            text += '{0:8} | {1:<}\n'.format("index:", "alpha [0-255]")
+            text += '{0}'.format("--------------------")
+            print(text)
+            for index, alpha in enumerate(chunk_data):
+              print('{0:<8} | {1:<}'.format(index, alpha))
+          print("")
+
+  def get_color_type(self):
+    for chunk in self.chunks:
+        if chunk.name == "IHDR":
+          chunk_data = self.data[chunk.start+8:chunk.start+8+chunk.datasize]
+          return chunk_data[9]
 
   def print_all_chunks(self):
     for chunk in self.chunks:

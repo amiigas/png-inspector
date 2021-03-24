@@ -1,4 +1,3 @@
-from PIL import Image as PILImage
 from image import PNG_Image
 
 
@@ -27,10 +26,6 @@ def pretty_print(bytes, linewidth):
     i += 1
   print("")
 
-def display_image(filepath):
-  img = PILImage.open(filepath)
-  img.show()
-
 def query_filename():
   filepath = input("Enter png image file path. ('q' to quit): ")
   if filepath == "q":
@@ -39,14 +34,14 @@ def query_filename():
     inspect(filepath)
 
 def inspect(filepath):
-  img = PNG_Image()
-  if img.set_raw_data(filepath):
+  img = PNG_Image(filepath)
+  if img.set_raw_data():
     if img.is_signature_correct():
       img.index_chunks()
       option = ""
       while option != "q":
         if option == "1":
-          display_image(filepath)
+          img.display()
         elif option == "2":
           img.print_all_chunks()
         elif option == "3":

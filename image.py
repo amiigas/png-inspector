@@ -1,4 +1,5 @@
 from PIL import ImageCms as PILImageCms
+from PIL import Image as PILImage
 import zlib
 import io
 from chunk import Chunk
@@ -6,12 +7,13 @@ import lookup_tables as lt
 
 
 class PNG_Image:
-  def __init__(self):
+  def __init__(self, filepath):
+    self.filepath = filepath
     self.chunks = []
 
-  def set_raw_data(self, filepath):
+  def set_raw_data(self):
     try:
-      f = open(filepath, "rb")
+      f = open(self.filepath, "rb")
       self.data = bytearray(f.read())
       f.close()
       return True
@@ -166,3 +168,7 @@ class PNG_Image:
   def print_all_chunks(self):
     for chunk in self.chunks:
       print(chunk)
+
+  def display(self):
+    img = PILImage.open(self.filepath)
+    img.show()

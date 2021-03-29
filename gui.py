@@ -65,7 +65,7 @@ class GUI:
               sg.Text("Console", font=("Helvetica", title_font_size)),
           ],
           [
-              sg.Output(size=(60,25), key='-OUTPUT-'),
+              sg.Output(size=(60,25), font=("Menlo"), key='-OUTPUT-'),
           ]
       ]
 
@@ -74,7 +74,7 @@ class GUI:
               sg.Text("Raw data", font=("Helvetica", title_font_size)),
           ],
           [
-              sg.MLine(key='-RAW-'+sg.WRITE_ONLY_KEY, size=(60,25)),
+              sg.MLine(key='-RAW-'+sg.WRITE_ONLY_KEY, font=("Menlo"), size=(60,25)),
           ]
       ]
 
@@ -120,15 +120,29 @@ class GUI:
     ]
     self.window["-FILE LIST-"].update(fnames)
 
-  def display_image(self, filename):
+  def fill_chunk_list(self, img):
+    chunk_names = []
+    for chunk in img.chunks:
+      chunk_names.append(chunk.name)
+    self.window["-CHUNK LIST-"].update(chunk_names)
+
+  def print_chunk_named(self, name, img):
+    img.print_chunk_named(name)
+
+  def print_raw_output(self, name, img):
+    for chunk in img.chunks:
+      if chunk.name == name:
+        data = img.data[chunk.start:chunk.start + 8 + chunk.datasize + 4]
+        self.window['-RAW-'+sg.WRITE_ONLY_KEY].print(pretty(data, 20), "\n\n")
+
+  def display_image(self, filepath):
     try:
-      self.window["-IMAGE-"].update(data=self.get_img_data(filename))
+      self.window["-IMAGE-"].update(data=self.get_img_data(filepath))
     except:
       pass
 
-  def display_spectrum(self, values):
+  def display_spectrum(self):
     if self.fig_agg is not None:
-      print("imlive - deleteing ")
       self.delete_fig_agg(self.fig_agg)
     fig = self.make_fig()
     self.fig_agg = self.draw_figure(self.window["-FOURIER-"].TKCanvas, fig)
@@ -160,5 +174,18 @@ class GUI:
   def delete_fig_agg(self,fig_agg):
     fig_agg.get_tk_widget().forget()
 
-  def print_raw_output(self):
-    self.window['-RAW-'+sg.WRITE_ONLY_KEY].print("printed to raw mline")
+  def clear_consoles(self):
+    self.window["-OUTPUT-"].update("")
+    self.window['-RAW-'+sg.WRITE_ONLY_KEY].update("")
+
+
+def pretty(bytes, linewidth):
+  i = 1
+  text = ""
+  for byte in bytes:
+    if i % linewidth == 0:
+      text += '{:02X}\n'.format(byte)
+    else:
+      text += '{:02X} '.format(byte)
+    i += 1
+  return text

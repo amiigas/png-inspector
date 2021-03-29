@@ -62,6 +62,10 @@ class PNG_Image:
       self.print_iCCP_chunk()
     elif name == "tRNS":
       self.print_tRNS_chunk()
+    else:
+      for chunk in self.chunks:
+        if chunk.name == name:
+          print(chunk)
 
   def print_critical_chunks(self):
     self.print_IHDR_chunk()

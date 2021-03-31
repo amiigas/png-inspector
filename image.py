@@ -3,6 +3,9 @@ import zlib
 import io
 from chunk import Chunk
 import lookup_tables as lt
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
 
 
 class PNG_Image:
@@ -166,3 +169,10 @@ class PNG_Image:
   def print_all_chunks(self):
     for chunk in self.chunks:
       print(chunk)
+
+  def fourier_spectrum(self, filepath):
+    plt.figure(figsize=(6.4, 4.8), constrained_layout=False)
+    img = cv2.imread(filepath, 0)
+    fourier_img = np.fft.fft2(img)
+    plt.imshow(np.log(1+np.abs(fourier_img)), "gray"), plt.title("Image spectrum")
+    plt.show()

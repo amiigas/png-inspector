@@ -3,8 +3,6 @@ import zlib
 import io
 from chunk import Chunk
 import lookup_tables as lt
-import numpy as np
-import matplotlib.pyplot as plt
 
 
 class PNG_Image:
@@ -170,51 +168,22 @@ class PNG_Image:
     for chunk in self.chunks:
         if chunk.name == "iTXt":
           chunk_data = self.get_chunk_data(chunk.start, chunk.datasize)
-          index = 0
-          keyword = []
+          fragments = []
+          data_fragment = []
           for i in chunk_data:
             if not i == 0x00:
-              keyword.append(i)
-              index += 1
+              data_fragment.append(i)
             else:
-              index += 1
-              break
-          keyword = "".join(list(map(chr, keyword)))
-          compression_flag = chunk_data[index+1]
-          compression_method = chunk_data[index+2]
-          index += 3
-          language_tag = []
-          for i in chunk_data[index:]:
-            if not i == 0x00:
-              language_tag.append(i)
-              index += 1
-            else:
-              index += 1
-              break
-          language_tag = "".join(list(map(chr, language_tag)))
-          translated_keyword = []
-          for i in chunk_data[index:]:
-            if not i == 0x00:
-              translated_keyword.append(i)
-              index += 1
-            else:
-              index += 1
-              break
-          translated_keyword = "".join(list(map(chr, translated_keyword)))
-          chunk_text = []
-          for i in chunk_data[index:]:
-            if not i == 0x00:
-              chunk_text.append(i)
-            else:
-              break
-          chunk_text = "".join(list(map(chr, chunk_text)))
+              fragments.append("".join(list(map(chr, data_fragment))))
+              data_fragment = []
+          fragments.append("".join(list(map(chr, data_fragment))))
           text = '{0:24}{1:<}\n'.format("chunk name:", chunk.name)
-          text = '{0:24}{1:<}\n'.format("keyword:", keyword)
-          text += '{0:24}{1:<}\n'.format("compression flag:", compression_flag)
-          text += '{0:24}{1:<}\n'.format("compression method:", compression_method)
-          text += '{0:24}{1:<}\n'.format("language tag:", language_tag)
-          text += '{0:24}{1:<}\n'.format("translated keyword:", translated_keyword)
-          text += '{0:24}{1:<}\n'.format("text:", chunk_text)
+          text = '{0:24}{1:<}\n'.format("keyword:", fragments[0])
+          text += '{0:24}{1:<}\n'.format("compression flag:", "0" if fragments[1] == '' else fragments[1])
+          text += '{0:24}{1:<}\n'.format("compression method:", "0" if fragments[2] == '' else fragments[2])
+          text += '{0:24}{1:<}\n'.format("language tag:", fragments[3])
+          text += '{0:24}{1:<}\n'.format("translated keyword:", fragments[4])
+          text += '{0:24}{1:<}\n'.format("text:", fragments[5])
           print(text)
           
 

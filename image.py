@@ -1,8 +1,9 @@
-from PIL import ImageCms as PILImageCms
-import zlib
 import io
+import zlib
 from chunk import Chunk
 import lookup_tables as lt
+import numpy as np
+from PIL import ImageCms as PILImageCms
 
 
 class PNG_Image:
@@ -31,6 +32,7 @@ class PNG_Image:
 
   def index_chunks(self):
     print("Indexing all chunks.")
+    self.chunks.clear()
     start = 8
     while start < len(self.data):
       chunk = self.get_chunk_at(start)
@@ -44,9 +46,29 @@ class PNG_Image:
     for offset in range(4,8):
       name += chr(self.data[start + offset])
     return Chunk(start, name, datasize)
+  
+  def get_chunk_by_name(self, name):
+    for chunk in self.chunks:
+        if chunk.name == name:
+          return chunk
 
   def get_chunk_data(self, start, datasize):
     return self.data[start+8:start+8+datasize]
+
+  def delete_metadata(self):
+    to_delete = []
+    for chunk in self.chunks:
+      if ord(chunk.name[0]) > 96:
+        to_delete.append(chunk.name)
+    for chunk_name in to_delete:
+      chunk = self.get_chunk_by_name(chunk_name)
+      self.delete_chunk(chunk)
+
+  def delete_chunk(self, chunk):
+    start = chunk.start
+    end = chunk.start+4+4+chunk.datasize+4
+    self.data = np.delete(self.data, np.s_[start:end])
+    self.index_chunks()
 
   def print_chunk_named(self, name):
     if name == "IHDR":

@@ -45,6 +45,14 @@ def run_main_gui_loop(gui):
         continue
     elif event == "-DELETE METADATA-":
       print("cliked delete meta of", img.filepath)
+      try:
+        chunk_name = None
+        gui.clear_consoles()
+        gui.set_buttons_state(chunk_name, filepath)
+        img.delete_metadata()
+        gui.fill_chunk_list(img)
+      except:
+        continue
     elif event == "-DELETE CHUNK-":
       print("cliked delete chunk", chunk_name)
 

@@ -1,4 +1,5 @@
 from PIL import ImageCms as PILImageCms
+from PIL import Image as PILImage
 import zlib
 import io
 from chunk import Chunk
@@ -9,12 +10,13 @@ import matplotlib.pyplot as plt
 
 
 class PNG_Image:
-  def __init__(self):
+  def __init__(self, filepath):
+    self.filepath = filepath
     self.chunks = []
 
-  def set_raw_data(self, filepath):
+  def set_raw_data(self):
     try:
-      f = open(filepath, "rb")
+      f = open(self.filepath, "rb")
       self.data = bytearray(f.read())
       f.close()
       return True
@@ -65,6 +67,10 @@ class PNG_Image:
       self.print_tRNS_chunk()
     elif name == "iTXt":
       self.print_iTXt_chunk()
+    else:
+      for chunk in self.chunks:
+        if chunk.name == name:
+          print(chunk)
 
   def print_critical_chunks(self):
     self.print_IHDR_chunk()

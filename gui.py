@@ -24,7 +24,7 @@ class GUI:
           ],
           [
               sg.In(size=(24, 1), enable_events=True, key="-FOLDER-"),
-              sg.FolderBrowse(),
+              sg.FolderBrowse(button_color=("black", "orange")),
           ],
           [
               sg.Listbox(values=[], enable_events=True, size=(30,40), key="-FILE LIST-")
@@ -36,10 +36,11 @@ class GUI:
               sg.Text("Image chunks", font=("Helvetica", title_font_size))
           ],
           [
-              sg.Button("Delete Metadata")
+              sg.Button("Delete Metadata", enable_events=True, disabled=True, key="-DELETE METADATA-", button_color=("black", "orange")),
+              sg.Button("Delete Chunk", enable_events=True, disabled=True, key="-DELETE CHUNK-", button_color=("black", "orange"))
           ],
           [
-              sg.Listbox(values=[], enable_events=True, size=(20,40), key="-CHUNK LIST-")
+              sg.Listbox(values=[], enable_events=True, size=(25,40), key="-CHUNK LIST-")
           ]
       ]
 
@@ -184,6 +185,16 @@ class GUI:
   def clear_consoles(self):
     self.window["-OUTPUT-"].update("")
     self.window['-RAW-'+sg.WRITE_ONLY_KEY].update("")
+  
+  def set_buttons_state(self, chunk_name, filename):
+    if filename:
+      self.window["-DELETE METADATA-"].update(disabled=False)
+    else:
+      self.window["-DELETE METADATA-"].update(disabled=True)
+    if chunk_name:
+      self.window["-DELETE CHUNK-"].update(disabled=False)
+    else:
+      self.window["-DELETE CHUNK-"].update(disabled=True)
 
 
 def pretty(bytes, linewidth):

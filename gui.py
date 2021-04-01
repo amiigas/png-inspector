@@ -4,6 +4,7 @@ import PySimpleGUI as sg
 from PIL import Image, ImageTk
 import numpy as np
 import matplotlib as plt
+import cv2
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 class GUI:
@@ -141,10 +142,10 @@ class GUI:
     except:
       pass
 
-  def display_spectrum(self):
+  def display_spectrum(self, filepath):
     if self.fig_agg is not None:
       self.delete_fig_agg(self.fig_agg)
-    fig = self.make_fig()
+    fig = self.make_fig(filepath)
     self.fig_agg = self.draw_figure(self.window["-FOURIER-"].TKCanvas, fig)
 
   def get_img_data(self, filename, resize=(500, 500)):
@@ -165,10 +166,16 @@ class GUI:
     figure_canvas_agg.get_tk_widget().pack(side="top", fill="both", expand=1)
     return figure_canvas_agg
 
-  def make_fig(self):
-    fig = plt.figure.Figure(figsize=(5, 4), dpi=100)
-    t = np.arange(0, 3, .01)
-    fig.add_subplot(111).plot(t, 2 * np.sin(2 * np.pi * t))
+  def make_fig(self, filepath, resize=(500, 500)):
+    fig = plt.figure.Figure(figsize=(5, 4))
+    img = cv2.imread(filepath, 0)
+    width, height = (img.shape[1], img.shape[0])
+    new_width, new_height = resize
+    scale = min(new_height/height, new_width/width)
+    dimensions = (int(width*scale), int(height*scale))
+    resized_img = cv2.resize(img, dimensions)
+    fourier_img = np.fft.fft2(resized_img)
+    fig.figimage(np.log(1+np.abs(fourier_img)), cmap="gray", resize=True)
     return fig
 
   def delete_fig_agg(self,fig_agg):

@@ -27,7 +27,7 @@ def run_main_gui_loop(gui):
         continue
       gui.fill_chunk_list(img)
       gui.display_image(filepath)
-      gui.display_spectrum()
+      gui.display_spectrum(filepath)
     elif event == "-CHUNK LIST-":
       gui.clear_consoles()
       chunk_name = values["-CHUNK LIST-"][0]

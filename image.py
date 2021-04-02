@@ -22,10 +22,10 @@ class PNG_Image:
       return False
 
   def save(self):
-    with open(self.filepath, "w") as file:
+    with open(self.filepath, "wb") as file:
       try:
         file.write(self.data)
-        print("Image saves successfully.")
+        print("Image saved successfully.")
       except:
         print("Saving image failed.")
 

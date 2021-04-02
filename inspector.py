@@ -50,6 +50,7 @@ def run_main_gui_loop(gui):
         gui.clear_consoles()
         gui.set_buttons_state(chunk_name, filepath)
         img.delete_metadata()
+        img.save()
         gui.fill_chunk_list(img)
       except:
         continue

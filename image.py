@@ -21,6 +21,14 @@ class PNG_Image:
       print(e)
       return False
 
+  def save(self):
+    with open(self.filepath, "w") as file:
+      try:
+        file.write(self.data)
+        print("Image saves successfully.")
+      except:
+        print("Saving image failed.")
+
   def is_signature_correct(self):
     png_signature = [137, 80, 78, 71, 13, 10, 26, 10]
     for i in range(0,8):
@@ -67,7 +75,12 @@ class PNG_Image:
   def delete_chunk(self, chunk):
     start = chunk.start
     end = chunk.start+4+4+chunk.datasize+4
-    self.data = np.delete(self.data, np.s_[start:end])
+    try:
+      self.data = np.delete(self.data, np.s_[start:end])
+      print("Chunk", chunk.name, "deleted successfully.")
+    except:
+      print("Could not delete chunk", chunk.name)
+
     self.index_chunks()
 
   def print_chunk_named(self, name):

@@ -1,9 +1,7 @@
-import io
 import zlib
 from chunk import Chunk
 import lookup_tables as lt
 import numpy as np
-from PIL import ImageCms as PILImageCms
 
 
 class PNG_Image:
@@ -161,20 +159,42 @@ class PNG_Image:
           else:
             break
         profile_name = "".join(list(map(chr, profile_name)))
-        compression_type = chunk_data[len(profile_name)+1]
         compressed_icc_profile = chunk_data[len(profile_name)+2:]
         icc_profile = zlib.decompress(compressed_icc_profile)
-        f_stream = io.BytesIO(icc_profile)
-        profile = PILImageCms.ImageCmsProfile(f_stream)
+
+        profile_size = int.from_bytes(icc_profile[0:4], byteorder="big", signed=False)
+        cmm_type = icc_profile[4:8].decode('utf-8')
+        v = list(hex(int.from_bytes(icc_profile[8:12], byteorder="big", signed=False)))
+        version = f"{v[2]}.{v[3]}"
+        device_class = icc_profile[12:16].decode('utf-8')
+        color_space = icc_profile[16:20].decode('utf-8')
+        connection_space = icc_profile[20:24].decode('utf-8')
+        year = int.from_bytes(icc_profile[24:26], byteorder="big", signed=False)
+        month = int.from_bytes(icc_profile[26:28], byteorder="big", signed=False)
+        day = int.from_bytes(icc_profile[28:30], byteorder="big", signed=False)
+        hour = int.from_bytes(icc_profile[30:32], byteorder="big", signed=False)
+        minute = int.from_bytes(icc_profile[32:34], byteorder="big", signed=False)
+        second = int.from_bytes(icc_profile[34:36], byteorder="big", signed=False)
+        date = f"{day:02}-{month:02}-{year}"
+        time = f"{hour:02}:{minute:02}:{second:02}"
+        acsp = icc_profile[36:40].decode('utf-8')
+        target_platform = icc_profile[40:44].decode('utf-8')
+        manufacturer = icc_profile[48:52].decode('utf-8')
+        device_model = icc_profile[52:56].decode('utf-8')
+
         text = '{0:16}{1:<}\n'.format("chunk name:", chunk.name)
-        text += '{0:16}{1:<}\n'.format("profile name:", profile_name)
-        text += '{0:16}{1:<}\n'.format("compression:", compression_type)
-        text += '{0:16}{1:}\n'.format("creation date:", profile.profile.creation_date)
-        text += '{0:16}{1:<}\n'.format("version:", profile.profile.version)
-        text += '{0:16}{1:<}\n'.format("color space:", profile.profile.xcolor_space)
-        text += '{0:16}{1:<}\n'.format("device class:", profile.profile.device_class)
-        text += '{0:16}{1:<}\n'.format("copyright:", profile.profile.copyright)
-        text += '{0:16}{1:<}\n'.format("description:", profile.profile.profile_description)
+        text += '{0:16}{1:<}\n'.format("profile size:", profile_size)
+        text += '{0:16}{1:<}\n'.format("CMM type:", cmm_type)
+        text += '{0:16}{1:}\n'.format("version:", version)
+        text += '{0:16}{1:<12}{2}\n'.format("device class:", device_class, lt.iccp_device_class[device_class])
+        text += '{0:16}{1:<}\n'.format("color space:", color_space)
+        text += '{0:16}{1:<}\n'.format("connect space:", connection_space)
+        text += '{0:16}{1:<}\n'.format("date:", date)
+        text += '{0:16}{1:<}\n'.format("time:", time)
+        text += '{0:16}{1:<12}{2}\n'.format("signature:", acsp, "Correct" if acsp == 'acsp' else "Incorrect")
+        text += '{0:16}{1:<12}{2}\n'.format("platform:", target_platform, lt.iccp_platform[target_platform])
+        text += '{0:16}{1:<}\n'.format("manufacturer:", manufacturer)
+        text += '{0:16}{1:<}\n'.format("device model:", device_model)
         print(text)
 
   def print_tRNS_chunk(self):

@@ -238,10 +238,10 @@ class PNG_Image:
           text += '{0:24}{1:<}\n'.format("compression method:", "0" if fragments[2] == '' else fragments[2])
           text += '{0:24}{1:<}\n'.format("language tag:", fragments[3])
           text += '{0:24}{1:<}\n'.format("translated keyword:", fragments[4])
-          text += '{0:24}{1:<}\n'.format("text:", fragments[5])
+          for line in fragments[5].split("\n"):
+            text += '{0:24}{1:<}\n'.format("", line)
           print(text)
           
-
   def get_color_type(self):
     for chunk in self.chunks:
         if chunk.name == "IHDR":

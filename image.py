@@ -8,6 +8,7 @@ class PNG_Image:
   def __init__(self, filepath):
     self.filepath = filepath
     self.chunks = []
+    self.colors = []
 
   def set_raw_data(self):
     try:
@@ -131,12 +132,17 @@ class PNG_Image:
         text += '{0:8} | {1:>3} {2:>3} {3:>3}\n'.format("color:", "R", "G", "B")
         text += '{0}'.format("--------------------")
         print(text)
+        colors = []
         for color in range(palette_size):
           red = chunk_data[color*3]
           green = chunk_data[color*3+1]
           blue = chunk_data[color*3+2]
-          print('{0:<8} | {1:3} {2:3} {3:3}'.format(color, red, green, blue))
-        print("")
+          colors.append((red, green, blue))
+        self.set_colors(colors)
+        text = ""
+        for i, color in enumerate(colors):
+          text += '{0:<8} | {1:3} {2:3} {3:3}\n'.format(i, color[0], color[1], color[2])
+        print(text)
 
   def print_IDAT_chunks(self):
     for chunk in self.chunks:
@@ -251,3 +257,6 @@ class PNG_Image:
   def print_all_chunks(self):
     for chunk in self.chunks:
       print(chunk)
+
+  def set_colors(self, colors):
+    self.colors = colors

@@ -41,6 +41,8 @@ def run_main_gui_loop(gui):
         gui.set_buttons_state(chunk_name, filepath)
         gui.print_chunk_named(chunk_name, img)
         gui.print_raw_output(chunk_name, img)
+        if chunk_name == "PLTE":
+          gui.display_palette(img.colors)
       except:
         continue
     elif event == "-DELETE METADATA-":

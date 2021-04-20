@@ -4,6 +4,7 @@ import PySimpleGUI as sg
 from PIL import Image, ImageTk
 import numpy as np
 import matplotlib as plt
+import matplotlib.pyplot as pyplt
 import cv2
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
@@ -148,6 +149,22 @@ class GUI:
       self.delete_fig_agg(self.fig_agg)
     fig = self.make_fig(filepath)
     self.fig_agg = self.draw_figure(self.window["-FOURIER-"].TKCanvas, fig)
+
+  def display_palette(self, colors):
+    pyplt.ion()
+    fig, ax = pyplt.subplots()
+    for i in range(16):
+      for j in range(16):
+        try:
+          r = colors[i*16+j][0]
+          g = colors[i*16+j][1]
+          b = colors[i*16+j][2]
+          hex_color = f"#{r:02x}{g:02x}{b:02x}"
+        except:
+          hex_color = (0.0, 0.0, 0.0, 0.0)
+        ax.broken_barh([(j*10, 10)], (i*10, 10), facecolors=hex_color)
+    ax.get_xaxis().set_visible(False)
+    ax.get_yaxis().set_visible(False)
 
   def get_img_data(self, filename, resize=(500, 500)):
     image = Image.open(filename)

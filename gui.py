@@ -192,8 +192,8 @@ class GUI:
     scale = min(new_height/height, new_width/width)
     dimensions = (int(width*scale), int(height*scale))
     resized_img = cv2.resize(img, dimensions)
-    fourier_img = np.fft.fft2(resized_img)
-    fig.figimage(np.log(1+np.abs(fourier_img)), cmap="gray", resize=True)
+    fourier_img = np.fft.fftshift(np.fft.fft2(resized_img))
+    fig.figimage(20*np.log(np.abs(fourier_img)), cmap="gray", resize=True)
     return fig
 
   def delete_fig_agg(self,fig_agg):

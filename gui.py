@@ -57,6 +57,7 @@ class GUI:
       plot_section = [
           [
               sg.Text("Fourier Spectrum", font=("Helvetica", title_font_size)),
+              sg.Combo(('Magnitude', 'Phase'), default_value='Magnitude', size=(20, 1), key="-FFT-COMBO-", readonly=True, enable_events=True),
           ],
           [
               sg.Canvas(key="-FOURIER-"),
@@ -144,10 +145,10 @@ class GUI:
     except:
       pass
 
-  def display_spectrum(self, filepath):
+  def display_spectrum(self, filepath, values):
     if self.fig_agg is not None:
       self.delete_fig_agg(self.fig_agg)
-    fig = self.make_fig(filepath)
+    fig = self.make_fig(filepath, values)
     self.fig_agg = self.draw_figure(self.window["-FOURIER-"].TKCanvas, fig)
 
   def display_palette(self, colors):
@@ -184,7 +185,7 @@ class GUI:
     figure_canvas_agg.get_tk_widget().pack(side="top", fill="both", expand=1)
     return figure_canvas_agg
 
-  def make_fig(self, filepath, resize=(500, 500)):
+  def make_fig(self, filepath, values, resize=(500, 500)):
     fig = plt.figure.Figure(figsize=(5, 4))
     img = cv2.imread(filepath, 0)
     width, height = (img.shape[1], img.shape[0])
@@ -193,7 +194,10 @@ class GUI:
     dimensions = (int(width*scale), int(height*scale))
     resized_img = cv2.resize(img, dimensions)
     fourier_img = np.fft.fftshift(np.fft.fft2(resized_img))
-    fig.figimage(20*np.log(np.abs(fourier_img)), cmap="gray", resize=True)
+    if values["-FFT-COMBO-"] == "Magnitude":
+      fig.figimage(20*np.log(np.abs(fourier_img)), cmap="gray", resize=True)
+    elif values["-FFT-COMBO-"] == "Phase":
+      fig.figimage(np.angle(fourier_img), cmap="gray", resize=True)
     return fig
 
   def delete_fig_agg(self,fig_agg):

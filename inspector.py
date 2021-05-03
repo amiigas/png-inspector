@@ -1,5 +1,4 @@
 import os.path
-from PySimpleGUI.PySimpleGUI import Window
 
 import matplotlib as plt
 import PySimpleGUI as sg
@@ -29,11 +28,11 @@ def run_main_gui_loop(gui):
         img.set_raw_data()
         img.is_signature_correct()
         img.index_chunks()
+        gui.fill_chunk_list(img)
+        gui.display_image(filepath)
+        gui.display_spectrum(filepath, values)
       except:
         continue
-      gui.fill_chunk_list(img)
-      gui.display_image(filepath)
-      gui.display_spectrum(filepath)
     elif event == "-CHUNK LIST-":
       try:
         chunk_name = values["-CHUNK LIST-"][0]
@@ -63,6 +62,12 @@ def run_main_gui_loop(gui):
         chunk_name = None
         gui.set_buttons_state(chunk_name, filepath)
         gui.fill_chunk_list(img)
+      except:
+        continue
+    elif event == "-FFT-COMBO-":
+      try:
+        filepath = os.path.join(values["-FOLDER-"], values["-FILE LIST-"][0])
+        gui.display_spectrum(filepath, values)
       except:
         continue
 

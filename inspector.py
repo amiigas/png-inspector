@@ -64,6 +64,14 @@ def run_main_gui_loop(gui):
         gui.fill_chunk_list(img)
       except:
         continue
+    elif event == "-ENCRYPT IMAGE-":
+      # try:
+        gui.clear_consoles()
+        # img.encrypt(bits=1024)
+        img.save()
+        gui.set_buttons_state(chunk_name, filepath)
+      # except:
+      #   continue
     elif event == "-FFT-COMBO-":
       try:
         filepath = os.path.join(values["-FOLDER-"], values["-FILE LIST-"][0])

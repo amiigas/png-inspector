@@ -38,7 +38,8 @@ class GUI:
           ],
           [
               sg.Button("Delete Metadata", enable_events=True, disabled=True, key="-DELETE METADATA-", button_color=("black", "orange")),
-              sg.Button("Delete Chunk", enable_events=True, disabled=True, key="-DELETE CHUNK-", button_color=("black", "orange"))
+              sg.Button("Delete Chunk", enable_events=True, disabled=True, key="-DELETE CHUNK-", button_color=("black", "orange")),
+              sg.Button("Encrypt", enable_events=True, disabled=True, key="-ENCRYPT IMAGE-", button_color=("black", "orange"))
           ],
           [
               sg.Listbox(values=[], enable_events=True, size=(25,40), key="-CHUNK LIST-")
@@ -69,7 +70,7 @@ class GUI:
               sg.Text("Console", font=("Helvetica", title_font_size)),
           ],
           [
-              sg.Output(size=(60,25), font=("Menlo"), key='-OUTPUT-'),
+              # sg.Output(size=(60,25), font=("Menlo"), key='-OUTPUT-'),
           ]
       ]
 
@@ -210,8 +211,10 @@ class GUI:
   def set_buttons_state(self, chunk_name, filename):
     if filename:
       self.window["-DELETE METADATA-"].update(disabled=False)
+      self.window["-ENCRYPT IMAGE-"].update(disabled=False)
     else:
       self.window["-DELETE METADATA-"].update(disabled=True)
+      self.window["-ENCRYPT IMAGE-"].update(disabled=True)
     if chunk_name:
       self.window["-DELETE CHUNK-"].update(disabled=False)
     else:

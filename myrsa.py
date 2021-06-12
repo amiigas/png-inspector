@@ -34,30 +34,15 @@ def generate_keys(bits, e=65537):
     d = mod_mul_inv(e, phi)
     return (e, n), (d, n)
 
-def encode(message, public_key):
+def encrypt(message, public_key):
     e = public_key[0]
     n = public_key[1]
     c = pow(message, e, n)
     return c
 
-def decode(ciphertext, private_key):
+def decrypt(ciphertext, private_key):
     d = private_key[0]
     n = private_key[1]
     m = pow(ciphertext, d, n)
     return m
 
-if __name__ == '__main__':
-    bits = 1024
-    public, private = generate_keys(bits)
-
-    plaintext = "poggers"
-    padded = [ord(val) for val in plaintext]
-    ciphertext = [encode(val, public) for val in padded]
-    decoded = [decode(val, private) for val in ciphertext]
-    decoded_plaintext = [chr(val) for val in decoded]
-
-    print(f"plaintext: {plaintext}")
-    print(f"padded: {padded}")
-    print(f"ciphertext: {ciphertext}")
-    print(f"decoded: {decoded}")
-    print(f"decoded_plaintext: {decoded_plaintext}")

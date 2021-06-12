@@ -1,7 +1,14 @@
+import secrets
 import zlib
+import binascii
+
+import numpy as np
+from PIL import Image
+
+import myrsa
+import rsa
 from chunk import Chunk
 import lookup_tables as lt
-import numpy as np
 
 
 class PNG_Image:
@@ -9,6 +16,9 @@ class PNG_Image:
     self.filepath = filepath
     self.chunks = []
     self.colors = []
+    self.set_raw_data()
+    if self.is_signature_correct():
+      self.index_chunks()
 
   def set_raw_data(self):
     try:
@@ -20,8 +30,9 @@ class PNG_Image:
       print(e)
       return False
 
-  def save(self):
-    with open(self.filepath, "wb") as file:
+  def save(self, new_filepath=None):
+    fp = new_filepath if new_filepath else self.filepath
+    with open(fp, "wb") as file:
       try:
         file.write(self.data)
         print("Image saved successfully.")
@@ -79,8 +90,27 @@ class PNG_Image:
       print("Chunk", chunk.name, "deleted successfully.")
     except:
       print("Could not delete chunk", chunk.name)
-
     self.index_chunks()
+
+  def delete_chunks_named(self, name):
+    for chunk in self.chunks:
+        if chunk.name == name:
+          self.delete_chunk(chunk)
+          self.delete_chunks_named(name)
+
+  def insert_chunk(self, index, name, data):
+    # try:
+      size = int.to_bytes(len(data),4, byteorder='big', signed=False)
+      uni_name = bytes([ord(c) for c in name])
+      crc = int.to_bytes(binascii.crc32(uni_name + data), 4, byteorder='big', signed=False)
+      chunk = [int(x) for x in size + uni_name + data + crc]
+      preceding_chunk = self.chunks[index-1]
+      start = preceding_chunk.start+8+preceding_chunk.datasize+4
+      self.data = np.insert(self.data, start, chunk)
+      print(f"Chunk {name} inserted successfully at {index}.")
+      self.index_chunks()
+    # except:
+    #   print(f"Could not insert chunk {name} at index {index}")
 
   def print_chunk_named(self, name):
     if name == "IHDR":
@@ -260,3 +290,113 @@ class PNG_Image:
 
   def set_colors(self, colors):
     self.colors = colors
+
+  def get_IDAT_data(self):
+    result = bytearray()
+    for chunk in self.chunks:
+        if chunk.name == "IDAT":
+          result.extend(self.get_chunk_data(chunk.start, chunk.datasize))
+    return result
+
+  def get_img_size(self):
+    img = Image.open(self.filepath)
+    return img.size
+
+  def encrypt(self, public, bits=1024):
+    compressed_data = self.get_IDAT_data()
+    data = bytearray(zlib.decompress(compressed_data))
+
+    block_length = bits // 8 - 1
+    n_blocks = len(data) // block_length + 1
+    
+    encryptred_data = bytearray()
+    for i in range(n_blocks):
+      ### our imp
+      c = myrsa.encrypt(int.from_bytes(data[i*block_length:i*block_length+block_length], byteorder='big', signed=False), public)
+      encryptred_data.extend(int.to_bytes(c, bits//8, 'big', signed=False))
+      ### rsa module
+      # c = rsa.encrypt(data[i*block_length:i*block_length+block_length], public)
+      # encryptred_data.extend(c)
+
+    compressed_encrypted_data = zlib.compress(bytes(encryptred_data))
+    self.delete_chunks_named("IDAT")
+
+    chunks = len(compressed_encrypted_data) // 32000 + 1
+    for i in range(chunks):
+      d = compressed_encrypted_data[i*32000:(i+1)*32000]
+      self.insert_chunk(-1, "IDAT", d)
+
+  def decrypt(self, private, bits=1024):
+    compressed_data = self.get_IDAT_data()
+    data = bytearray(zlib.decompress(compressed_data))
+
+    block_length = bits // 8
+    n_blocks = len(data) // block_length + 1
+
+    decryptred_data = bytearray()
+    for i in range(n_blocks):
+      ### our imp
+      c = myrsa.decrypt(int.from_bytes(data[i*block_length:i*block_length+block_length], byteorder='big', signed=False), private)
+      decryptred_data.extend(int.to_bytes(c, bits//8-1, 'big', signed=False))
+      ### rsa module
+      # c = rsa.decrypt(data[i*block_length:i*block_length+block_length], private)
+      # decryptred_data.extend(c)
+
+    compressed_decrypted_data = zlib.compress(bytes(decryptred_data))
+
+    self.delete_chunks_named("IDAT")
+
+    chunks = len(compressed_decrypted_data) // 32000 + 1
+    for i in range(chunks):
+      d = compressed_decrypted_data[i*32000:(i+1)*32000]
+      self.insert_chunk(-1, "IDAT", d)
+
+  def encryptCBC(self, public, iv, bits=1024):
+    compressed_data = self.get_IDAT_data()
+    data = bytearray(zlib.decompress(compressed_data))
+
+    block_length = bits // 8 - 1 
+    n_blocks = len(data) // block_length + 1
+    
+    encryptred_data = bytearray()
+    prev_c = iv
+    for i in range(n_blocks):
+      plain = int.from_bytes(data[i*block_length:i*block_length+block_length], byteorder='big', signed=False)
+      plain_xored = plain ^ prev_c
+      c = myrsa.encrypt(plain_xored, public)
+      c = int.to_bytes(c, bits//8, 'big', signed=False)
+      encryptred_data.extend(c)
+      prev_c = int.from_bytes(c[1:], byteorder='big', signed=False)
+
+    compressed_encrypted_data = zlib.compress(bytes(encryptred_data))
+    self.delete_chunks_named("IDAT")
+
+    chunks = len(compressed_encrypted_data) // 32000 + 1
+    for i in range(chunks):
+      d = compressed_encrypted_data[i*32000:(i+1)*32000]
+      self.insert_chunk(-1, "IDAT", d)
+
+  def decryptCBC(self, private, iv, bits=1024):
+    compressed_data = self.get_IDAT_data()
+    data = bytearray(zlib.decompress(compressed_data))
+
+    block_length = bits // 8
+    n_blocks = len(data) // block_length + 1
+
+    decryptred_data = bytearray()
+    prev_c = iv
+    for i in range(n_blocks):
+      c = data[i*block_length:i*block_length+block_length]
+      plain_xored = myrsa.decrypt(int.from_bytes(c, byteorder='big', signed=False), private)
+      plain = plain_xored ^ prev_c
+      decryptred_data.extend(int.to_bytes(plain, bits//8-1, byteorder='big', signed=False))
+      prev_c = int.from_bytes(c[1:], byteorder='big', signed=False)
+
+    compressed_decrypted_data = zlib.compress(bytes(decryptred_data))
+
+    self.delete_chunks_named("IDAT")
+
+    chunks = len(compressed_decrypted_data) // 32000 + 1
+    for i in range(chunks):
+      d = compressed_decrypted_data[i*32000:(i+1)*32000]
+      self.insert_chunk(-1, "IDAT", d)

@@ -302,7 +302,7 @@ class PNG_Image:
     img = Image.open(self.filepath)
     return img.size
 
-  def encrypt(self, public, bits=1024):
+  def encrypt(self, public, bits=1024, mode='ECB', iv=0):
     compressed_data = self.get_IDAT_data()
     data = bytearray(zlib.decompress(compressed_data))
 
@@ -310,13 +310,24 @@ class PNG_Image:
     n_blocks = len(data) // block_length + 1
     
     encryptred_data = bytearray()
-    for i in range(n_blocks):
-      ### our imp
-      c = myrsa.encrypt(int.from_bytes(data[i*block_length:i*block_length+block_length], byteorder='big', signed=False), public)
-      encryptred_data.extend(int.to_bytes(c, bits//8, 'big', signed=False))
-      ### rsa module
-      # c = rsa.encrypt(data[i*block_length:i*block_length+block_length], public)
-      # encryptred_data.extend(c)
+
+    if mode == 'ECB':
+      for i in range(n_blocks):
+        ### our imp
+        c = myrsa.encrypt(int.from_bytes(data[i*block_length:i*block_length+block_length], byteorder='big', signed=False), public)
+        encryptred_data.extend(int.to_bytes(c, bits//8, 'big', signed=False))
+        ### rsa module
+        # c = rsa.encrypt(data[i*block_length:i*block_length+block_length], public)
+        # encryptred_data.extend(c)
+    elif mode == 'CBC':
+      prev_c = iv
+      for i in range(n_blocks):
+        plain = int.from_bytes(data[i*block_length:i*block_length+block_length], byteorder='big', signed=False)
+        plain_xored = plain ^ prev_c
+        c = myrsa.encrypt(plain_xored, public)
+        c = int.to_bytes(c, bits//8, 'big', signed=False)
+        encryptred_data.extend(c)
+        prev_c = int.from_bytes(c[1:], byteorder='big', signed=False)
 
     compressed_encrypted_data = zlib.compress(bytes(encryptred_data))
     self.delete_chunks_named("IDAT")
@@ -326,7 +337,7 @@ class PNG_Image:
       d = compressed_encrypted_data[i*32000:(i+1)*32000]
       self.insert_chunk(-1, "IDAT", d)
 
-  def decrypt(self, private, bits=1024):
+  def decrypt(self, private, bits=1024, mode='ECB', iv=0):
     compressed_data = self.get_IDAT_data()
     data = bytearray(zlib.decompress(compressed_data))
 
@@ -334,13 +345,23 @@ class PNG_Image:
     n_blocks = len(data) // block_length + 1
 
     decryptred_data = bytearray()
-    for i in range(n_blocks):
-      ### our imp
-      c = myrsa.decrypt(int.from_bytes(data[i*block_length:i*block_length+block_length], byteorder='big', signed=False), private)
-      decryptred_data.extend(int.to_bytes(c, bits//8-1, 'big', signed=False))
-      ### rsa module
-      # c = rsa.decrypt(data[i*block_length:i*block_length+block_length], private)
-      # decryptred_data.extend(c)
+
+    if mode == 'ECB':
+      for i in range(n_blocks):
+        ### our imp
+        c = myrsa.decrypt(int.from_bytes(data[i*block_length:i*block_length+block_length], byteorder='big', signed=False), private)
+        decryptred_data.extend(int.to_bytes(c, bits//8-1, 'big', signed=False))
+        ### rsa module
+        # c = rsa.decrypt(data[i*block_length:i*block_length+block_length], private)
+        # decryptred_data.extend(c)
+    elif mode == 'CBC':
+      prev_c = iv
+      for i in range(n_blocks):
+        c = data[i*block_length:i*block_length+block_length]
+        plain_xored = myrsa.decrypt(int.from_bytes(c, byteorder='big', signed=False), private)
+        plain = plain_xored ^ prev_c
+        decryptred_data.extend(int.to_bytes(plain, bits//8-1, byteorder='big', signed=False))
+        prev_c = int.from_bytes(c[1:], byteorder='big', signed=False)
 
     compressed_decrypted_data = zlib.compress(bytes(decryptred_data))
 
@@ -351,52 +372,52 @@ class PNG_Image:
       d = compressed_decrypted_data[i*32000:(i+1)*32000]
       self.insert_chunk(-1, "IDAT", d)
 
-  def encryptCBC(self, public, iv, bits=1024):
-    compressed_data = self.get_IDAT_data()
-    data = bytearray(zlib.decompress(compressed_data))
+  # def encryptCBC(self, public, iv, bits=1024):
+  #   compressed_data = self.get_IDAT_data()
+  #   data = bytearray(zlib.decompress(compressed_data))
 
-    block_length = bits // 8 - 1 
-    n_blocks = len(data) // block_length + 1
+  #   block_length = bits // 8 - 1 
+  #   n_blocks = len(data) // block_length + 1
     
-    encryptred_data = bytearray()
-    prev_c = iv
-    for i in range(n_blocks):
-      plain = int.from_bytes(data[i*block_length:i*block_length+block_length], byteorder='big', signed=False)
-      plain_xored = plain ^ prev_c
-      c = myrsa.encrypt(plain_xored, public)
-      c = int.to_bytes(c, bits//8, 'big', signed=False)
-      encryptred_data.extend(c)
-      prev_c = int.from_bytes(c[1:], byteorder='big', signed=False)
+  #   encryptred_data = bytearray()
+  #   prev_c = iv
+  #   for i in range(n_blocks):
+  #     plain = int.from_bytes(data[i*block_length:i*block_length+block_length], byteorder='big', signed=False)
+  #     plain_xored = plain ^ prev_c
+  #     c = myrsa.encrypt(plain_xored, public)
+  #     c = int.to_bytes(c, bits//8, 'big', signed=False)
+  #     encryptred_data.extend(c)
+  #     prev_c = int.from_bytes(c[1:], byteorder='big', signed=False)
 
-    compressed_encrypted_data = zlib.compress(bytes(encryptred_data))
-    self.delete_chunks_named("IDAT")
+  #   compressed_encrypted_data = zlib.compress(bytes(encryptred_data))
+  #   self.delete_chunks_named("IDAT")
 
-    chunks = len(compressed_encrypted_data) // 32000 + 1
-    for i in range(chunks):
-      d = compressed_encrypted_data[i*32000:(i+1)*32000]
-      self.insert_chunk(-1, "IDAT", d)
+  #   chunks = len(compressed_encrypted_data) // 32000 + 1
+  #   for i in range(chunks):
+  #     d = compressed_encrypted_data[i*32000:(i+1)*32000]
+  #     self.insert_chunk(-1, "IDAT", d)
 
-  def decryptCBC(self, private, iv, bits=1024):
-    compressed_data = self.get_IDAT_data()
-    data = bytearray(zlib.decompress(compressed_data))
+  # def decryptCBC(self, private, iv, bits=1024):
+  #   compressed_data = self.get_IDAT_data()
+  #   data = bytearray(zlib.decompress(compressed_data))
 
-    block_length = bits // 8
-    n_blocks = len(data) // block_length + 1
+  #   block_length = bits // 8
+  #   n_blocks = len(data) // block_length + 1
 
-    decryptred_data = bytearray()
-    prev_c = iv
-    for i in range(n_blocks):
-      c = data[i*block_length:i*block_length+block_length]
-      plain_xored = myrsa.decrypt(int.from_bytes(c, byteorder='big', signed=False), private)
-      plain = plain_xored ^ prev_c
-      decryptred_data.extend(int.to_bytes(plain, bits//8-1, byteorder='big', signed=False))
-      prev_c = int.from_bytes(c[1:], byteorder='big', signed=False)
+  #   decryptred_data = bytearray()
+  #   prev_c = iv
+  #   for i in range(n_blocks):
+  #     c = data[i*block_length:i*block_length+block_length]
+  #     plain_xored = myrsa.decrypt(int.from_bytes(c, byteorder='big', signed=False), private)
+  #     plain = plain_xored ^ prev_c
+  #     decryptred_data.extend(int.to_bytes(plain, bits//8-1, byteorder='big', signed=False))
+  #     prev_c = int.from_bytes(c[1:], byteorder='big', signed=False)
 
-    compressed_decrypted_data = zlib.compress(bytes(decryptred_data))
+  #   compressed_decrypted_data = zlib.compress(bytes(decryptred_data))
 
-    self.delete_chunks_named("IDAT")
+  #   self.delete_chunks_named("IDAT")
 
-    chunks = len(compressed_decrypted_data) // 32000 + 1
-    for i in range(chunks):
-      d = compressed_decrypted_data[i*32000:(i+1)*32000]
-      self.insert_chunk(-1, "IDAT", d)
+  #   chunks = len(compressed_decrypted_data) // 32000 + 1
+  #   for i in range(chunks):
+  #     d = compressed_decrypted_data[i*32000:(i+1)*32000]
+  #     self.insert_chunk(-1, "IDAT", d)

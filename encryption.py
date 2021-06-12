@@ -10,17 +10,16 @@ filepath = os.path.abspath(image_path)
 filepath_encrypted = os.path.abspath(image_path.replace('.png', '-encrypted.png'))
 filepath_decrypted = os.path.abspath(image_path.replace('.png', '-decrypted.png'))
 
-bits = 128
+bits = 1024
 public, private = myrsa.generate_keys(bits)
 # public, private = rsa.newkeys(bits)
 iv = secrets.randbits(bits-1)
+mode = 'CBC'
 
 img = PNG_Image(filepath)
 print("Encrypting...")
-# img.encrypt(public, bits)
-img.encryptCBC(public, iv, bits)
+img.encrypt(public, bits, mode=mode, iv=iv)
 img.save(filepath_encrypted)
 print("Decrypting...")
-# img.decrypt(private, bits)
-img.decryptCBC(private, iv, bits)
+img.decrypt(private, bits, mode=mode, iv=iv)
 img.save(filepath_decrypted)
